@@ -1,0 +1,28 @@
+# Standalone PiHoleMCP — for users who already run Pi-hole bare-metal
+# on the host and just want to add the MCP container.
+services:
+  pihole-mcp:
+    build: ..
+    image: ghcr.io/ethanorr930/pihole-mcp:latest
+    container_name: pihole-mcp
+    network_mode: host
+    environment:
+      PIHOLE_URL: http://127.0.0.1:8081
+      PIHOLE_APP_PASSWORD_FILE: /run/secrets/pihole_app_pwd
+      MCP_BEARER_TOKEN_FILE: /run/secrets/mcp_token
+      MCP_HOST: "127.0.0.1"
+      MCP_PORT: "8473"
+      MCP_PATH: "/mcp"
+      AUDIT_LOG_PATH: "/var/log/pihole-mcp/audit.log"
+    volumes:
+      - /var/log/pihole-mcp:/var/log/pihole-mcp
+    secrets:
+      - pihole_app_pwd
+      - mcp_token
+    restart: unless-stopped
+
+secrets:
+  pihole_app_pwd:
+    file: ./secrets/pihole_app_pwd
+  mcp_token:
+    file: ./secrets/mcp_token

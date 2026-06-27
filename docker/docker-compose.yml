@@ -1,0 +1,70 @@
+services:
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    hostname: pihole
+    environment:
+      TZ: ${TZ:-UTC}
+      FTLCONF_webserver_port: "8081"
+      FTLCONF_webserver_api_allow_destructive: "true"
+      WEBPASSWORD_FILE: /run/secrets/pihole_web_pwd
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    volumes:
+      - pihole_etc:/etc/pihole
+      - pihole_dnsmasq:/etc/dnsmasq.d
+    secrets:
+      - pihole_web_pwd
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "dig", "@127.0.0.1", "+time=2", "+tries=1", "pi.hole", "@127.0.0.1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  pihole-mcp:
+    build: ..
+    image: ghcr.io/ethanorr930/pihole-mcp:latest
+    container_name: pihole-mcp
+    network_mode: "service:pihole"
+    environment:
+      PIHOLE_URL: http://127.0.0.1:8081
+      PIHOLE_APP_PASSWORD_FILE: /run/secrets/pihole_app_pwd
+      MCP_BEARER_TOKEN_FILE: /run/secrets/mcp_token
+      MCP_HOST: "127.0.0.1"
+      MCP_PORT: "8473"
+      MCP_PATH: "/mcp"
+    secrets:
+      - pihole_app_pwd
+      - mcp_token
+    depends_on:
+      pihole:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    network_mode: "service:pihole"
+    volumes:
+      - ../install/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - pihole-mcp
+    restart: unless-stopped
+
+secrets:
+  pihole_web_pwd:
+    file: ./secrets/pihole_web_pwd
+  pihole_app_pwd:
+    file: ./secrets/pihole_app_pwd
+  mcp_token:
+    file: ./secrets/mcp_token
+
+volumes:
+  pihole_etc:
+  pihole_dnsmasq:
+  caddy_data:
+  caddy_config:

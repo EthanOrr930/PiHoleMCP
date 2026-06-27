@@ -1,0 +1,13 @@
+/var/log/pihole-mcp/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 pihole-mcp pihole-mcp
+    sharedscripts
+    postrotate
+        systemctl reload-or-restart pihole-mcp >/dev/null 2>&1 || true
+    endscript
+}

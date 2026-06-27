@@ -1,0 +1,45 @@
+{
+    admin off
+    # email your-name@example.com   # uncomment for Let's Encrypt ACME contact
+}
+
+# Replace ${HOSTNAME} with your real hostname; Caddy will auto-provision a Let's
+# Encrypt cert if the hostname resolves to this host and port 80 / 443 are open.
+${HOSTNAME} {
+    redir / /admin permanent
+
+    handle /mcp* {
+        reverse_proxy 127.0.0.1:8473 {
+            transport http {
+                read_timeout 1h
+                write_timeout 1h
+            }
+            flush_interval -1
+        }
+    }
+
+    handle /admin* {
+        reverse_proxy 127.0.0.1:8081
+    }
+
+    handle /api* {
+        reverse_proxy 127.0.0.1:8081
+    }
+
+    handle {
+        reverse_proxy 127.0.0.1:8081
+    }
+
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 10MB
+            roll_keep 5
+        }
+        format json
+    }
+}
+
+# Redirect plain HTTP -> HTTPS
+:80 {
+    redir https://{host}{uri} permanent
+}

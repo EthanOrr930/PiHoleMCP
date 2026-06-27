@@ -1,0 +1,24 @@
+[Unit]
+Description=PiHoleMCP — Pi-hole MCP server
+After=network-online.target pihole-FTL.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pihole-mcp
+Group=pihole-mcp
+EnvironmentFile=/etc/pihole-mcp/.env
+WorkingDirectory=/opt/pihole-mcp
+ExecStart=/opt/pihole-mcp/venv/bin/python -m pihole_mcp
+Restart=on-failure
+RestartSec=5
+
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+CapabilityBoundingSet=
+ReadWritePaths=/var/log/pihole-mcp /etc/pihole-mcp
+
+[Install]
+WantedBy=multi-user.target

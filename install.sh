@@ -72,6 +72,31 @@ require_root() {
   [[ ${EUID} -eq 0 ]] || die "Run as root (sudo bash install.sh ...)"
 }
 
+# When invoked via curl|bash the script has no sibling files (install/, mcp/, etc).
+# Detect that case and clone the repo to a working dir so the rest of the script
+# can use relative paths normally.
+bootstrap_repo() {
+  if [[ -d install && -d mcp ]]; then
+    info "Running from checked-out repo (\$PWD)."
+    return
+  fi
+  local workdir="/tmp/PiHoleMCP-bootstrap"
+  info "Fetching repo to ${workdir}..."
+  rm -rf "${workdir}"
+  if command -v git >/dev/null 2>&1; then
+    git clone --depth 1 --branch "${REPO_BRANCH}" "${REPO_URL}.git" "${workdir}" >/dev/null 2>&1 \
+      || die "git clone ${REPO_URL} failed"
+  else
+    DEBIAN_FRONTEND=noninteractive apt-get update -qq >/dev/null 2>&1 || true
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git >/dev/null 2>&1 \
+      || die "git unavailable and apt-get install git failed"
+    git clone --depth 1 --branch "${REPO_BRANCH}" "${REPO_URL}.git" "${workdir}" >/dev/null 2>&1 \
+      || die "git clone ${REPO_URL} failed"
+  fi
+  cd "${workdir}"
+  info "Working from ${PWD}."
+}
+
 detect_os() {
   if [[ ! -r /etc/os-release ]]; then
     die "Cannot detect OS (/etc/os-release missing)."
@@ -276,6 +301,7 @@ main() {
   parse_args "$@"
   require_root
   detect_os
+  bootstrap_repo
 
   if [[ ${USE_DOCKER} -eq 1 ]]; then
     docker_install

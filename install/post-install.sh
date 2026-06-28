@@ -22,7 +22,7 @@ shift_pihole_web_port() {
     exit 1
   fi
   echo "==> Shifting Pi-hole web server to port 8081 (frees :80 for Caddy)..."
-  pihole-FTL --config webserver.port '127.0.0.1:8081,[::1]:8081' >/dev/null
+  pihole-FTL --config webserver.port '127.0.0.1:8081o,[::1]:8081o' >/dev/null
   systemctl restart pihole-FTL >/dev/null 2>&1 || true
   sleep 2
 }

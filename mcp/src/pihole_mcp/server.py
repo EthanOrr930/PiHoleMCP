@@ -12,6 +12,7 @@ from fastmcp import FastMCP
 from .config import Settings, get_settings
 from .middleware.audit import AuditLogger, setup_logging
 from .middleware.auth import BearerAuthMiddleware
+from .middleware.healthz import HealthzMiddleware
 from .middleware.origin import OriginCheckMiddleware
 from .middleware.rate_limit import RateLimiter
 from .pihole.client import PiHoleClient
@@ -69,6 +70,7 @@ def run(settings: Settings | None = None) -> None:
     app = mcp.http_app(path=s.mcp_path)
     app = BearerAuthMiddleware(app, expected_token=_load_bearer(s))
     app = OriginCheckMiddleware(app, allowed_origins=s.allowed_origins_list)
+    app = HealthzMiddleware(app)
 
     config = uvicorn.Config(
         app,
